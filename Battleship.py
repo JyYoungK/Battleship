@@ -1,179 +1,124 @@
 import random
 
+# Define constants
+BOARD_SIZE = 10
+NUM_SHIPS = 5
+SHIP_LENGTHS = [5, 4, 3, 3, 2]
+HORIZONTAL_LABELS = 'ABCDEFGHIJ'
+VERTICAL_LABELS = [str(i) for i in range(1, 11)]
 
+# Initialize game variables
+gameRunning = True
+enemyShipCounts = NUM_SHIPS
+myShipPositions = []
+computerGuesses = []
+hitNumber = 0
+gameRound = 1
+shipHits = [0 for _ in range(NUM_SHIPS)]
+
+# Define helper functions
+def initializeBoard():
+    board = []
+    for i in range(BOARD_SIZE):
+        row = ['-'] * BOARD_SIZE
+        board.append(row)
+
+    ships = [(5, 'A'), (4, 'B'), (3, 'C'), (3, 'D'), (2, 'E')]
+    for ship_length, col in ships:
+        placed = False
+        while not placed:
+            # Randomly select a starting position for the ship
+            row = random.randint(0, BOARD_SIZE - 1)
+            start_col = random.randint(0, BOARD_SIZE - ship_length)
+            end_col = start_col + ship_length - 1
+
+            # Check if the ship would overlap with an existing ship
+            overlap = False
+            for c in range(start_col, end_col + 1):
+                if board[row][c] != '-':
+                    overlap = True
+                    break
+
+            if not overlap:
+                # Place the ship on the board
+                for c in range(start_col, end_col + 1):
+                    board[row][c] = col
+
+                # Add the ship positions to myShipPositions
+                for c in range(start_col, end_col + 1):
+                    myShipPositions.append((row, c))
+
+                placed = True
+
+    return board
 
 def printBoard(board):
-
-    print("      A       B       C       D       E       F       G       H       I       J")
-
-    print()
-
-    for i in range(1, 11):
-
-        if (i == 10):
-
-            print(i, end="    ")
-
-        else:
-
-            print(i, end="     ")
-
-        for j in board[i-1]:
-
-            print(j, end="       ")
-
-        print()
-
-        print()
-
-        print()
-
-
-
-def printInstructions():
-
-    print("Welcome to Battleship.")
-
-    print(" ")
-
-    print("Here are the instructions on how to play:")
-
-    print("This is a 2 player game between you and the computer.") 
-
-    print("You will have 5 ships. They will be randomly placed on the game board for you.")
-
-    print("The object of the game is to sink all 5 of your opponent's ships before they sink all of your ships.")
-
-    print("Enter a coordinate (Ex. B4) to guess where your opponent's ships are. Both players will not be able to see each others ships.")
-
-    print ("∅ will be shown if you miss the ship. ⊙ will be shown if you hit your opponent's ship.")
-
-    print("There will be 2 game boards shown. One will be your own with your ships and the other is your opponent's board. However, their ships can not be seen and only your guesses will be shown.")
-
-    print("Good luck. The game will now start.")
-
-    print(" ")
-
-
-
-def userMove(computerBoard):
-
-    print ("User Moves")
-
-
-
-#Making the dots for the game board
-
-userBoard = []
-
-computerBoard = []
-
-
-
-for i in range(10):
-
-    userBoard.append(list("●"*10))
-
-    computerBoard.append(list("●"*10))
-
-
-
+    print("  " + " ".join(HORIZONTAL_LABELS))
+    for i in range(BOARD_SIZE):
+        print(VERTICAL_LABELS[i] + " " + " ".join(board[i]))
 
 
 def computerMove():
+    global gameRound, hitNumber
+    global userBoard, gameRunning
+    global myShipPositions, shipHits
 
-    global hitNumber, gameRound, enemyShipCounts, gameRunning, computerGusses
-
+    print(f"\n\nGame Round {gameRound}:")
     
-
-    alphabetChoices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-
-    numberChoices = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
-
-    alphabet = random.choice(alphabetChoices)
-
-    number = int(random.choice(numberChoices))
-
-    
-
-    while [alphabet, number] in computerGuesses:
-
-        alphabet = random.choice(alphabetChoices)
-
-        number = int(random.choice(numberChoices))
-
-        
-
-    computerGuesses.append([alphabet, number])
-
-    print("The computer guessed: ", [alphabet, number])
-
-    
-
-    if [alphabet, number] in myShipPositions:
-
-        print("The computer hit your ship!")
-
-        hitNumber += 1
-
-        x = number - 1
-
-        y = ord(alphabet) - 65
-
-        userBoard[x][y] = "⊙" ## Mark it as hit
-
-        if hitNumber == enemyShipCounts:
-
-            print("Game over! The computer found all your ships in", gameRound, "rounds.")
-
-            gameRunning = False
-
+     # If the computer has hit a ship, target the surrounding area in the next move
+    if hitNumber > 0:
+        lastHit = computerGuesses[-1]
+        row, col = lastHit[0], lastHit[1]
+        while True:
+            direction = random.choice(['up', 'down', 'left', 'right'])
+            if direction == 'up' and row > 0 and (row-1, col) not in computerGuesses:
+                row -= 1
+                break
+            elif direction == 'down' and row < BOARD_SIZE-1 and (row+1, col) not in computerGuesses:
+                row += 1
+                break
+            elif direction == 'left' and col > 0 and (row, col-1) not in computerGuesses:
+                col -= 1
+                break
+            elif direction == 'right' and col < BOARD_SIZE-1 and (row, col+1) not in computerGuesses:
+                col += 1
+                break
     else:
+        # Otherwise, guess a random location
+        row, col = random.choice(list(set((i, j) for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)) - set(computerGuesses)))
 
-        print("The computer missed!")
+    computerGuesses.append((row, col))
+    if (row, col) in myShipPositions:
+        for i, shipPos in enumerate(myShipPositions):
+            if (row, col) == shipPos:
+                myShipPositions.pop(i)
+                userBoard[row][col] = "O"
+                print(f"The computer hit one of your ships at {HORIZONTAL_LABELS[col]}{row+1}!")
+                hitNumber += 1
+                shipHits[i] += 1
+                if shipHits[i] == SHIP_LENGTHS[i]:
+                    print(f"Ship {SHIP_LABELS[i]} has been sunk!")
+                break
+        if len(myShipPositions) == 0:
+            print("All your ships have been sunk. You lose.")
+            gameRunning = False
+        elif hitNumber == NUM_SHIPS:
+            print("The computer has sunk all your ships. You lose.")
+            gameRunning = False
+    else:
+        userBoard[row][col] = "X"
+        print(f"The computer missed at {HORIZONTAL_LABELS[col]}{row+1}!")
 
-        x = number - 1
 
-        y = ord(alphabet) - 65
-
-        userBoard[x][y] = "∅" ## Mark it as missed
-
-
-
-    
-
-
-
-
-
-printInstructions()
-
+# Initialize the game
+userBoard = initializeBoard()
+print("Game has been initialized")
 printBoard(userBoard)
 
-gameRunning = True
-
-enemyShipCounts = 5
-
-myShipPositions = [["G",1],["G",2],["G",3],["G",4],["G",5]] ## Change this to more realistic values
-
-computerGuesses = []
-
-
-
-hitNumber = 0
-
-gameRound = 1
-
-
-
+print("\nGame starting")
+# Start the game loop
 while(gameRunning):
-
-    print ("This is Game Round" , gameRound)
-
-    ## userMove()
-
     computerMove()
-
     printBoard(userBoard)
-
     gameRound += 1
+
