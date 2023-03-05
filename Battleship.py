@@ -4,6 +4,7 @@ import random
 BOARD_SIZE = 10
 NUM_SHIPS = 5
 SHIP_LENGTHS = [5, 4, 3, 3, 2]
+SHIP_LABELS = ['A', 'B', 'C', 'D', 'E'] # Add a label for the fifth ship
 HORIZONTAL_LABELS = 'ABCDEFGHIJ'
 VERTICAL_LABELS = [str(i) for i in range(1, 11)]
 
@@ -53,10 +54,9 @@ def initializeBoard():
     return board
 
 def printBoard(board):
-    print("  " + " ".join(HORIZONTAL_LABELS))
+    print(" " + " ".join(HORIZONTAL_LABELS))
     for i in range(BOARD_SIZE):
         print(VERTICAL_LABELS[i] + " " + " ".join(board[i]))
-
 
 def computerMove():
     global gameRound, hitNumber
@@ -65,7 +65,7 @@ def computerMove():
 
     print(f"\n\nGame Round {gameRound}:")
     
-     # If the computer has hit a ship, target the surrounding area in the next move
+    # If the computer has hit a ship, target the surrounding area in the next move
     if hitNumber > 0:
         lastHit = computerGuesses[-1]
         row, col = lastHit[0], lastHit[1]
@@ -95,9 +95,11 @@ def computerMove():
                 userBoard[row][col] = "O"
                 print(f"The computer hit one of your ships at {HORIZONTAL_LABELS[col]}{row+1}!")
                 hitNumber += 1
-                shipHits[i] += 1
-                if shipHits[i] == SHIP_LENGTHS[i]:
-                    print(f"Ship {SHIP_LABELS[i]} has been sunk!")
+                if i < len(shipHits):  # check if i is within range of shipHits
+                    shipHits[i] += 1
+                    if shipHits[i] == SHIP_LENGTHS[i]:
+                        print(f"Ship {chr(ord('A')+i)} has been sunk!")
+                        enemyShipCounts -= 1
                 break
         if len(myShipPositions) == 0:
             print("All your ships have been sunk. You lose.")
@@ -108,6 +110,8 @@ def computerMove():
     else:
         userBoard[row][col] = "X"
         print(f"The computer missed at {HORIZONTAL_LABELS[col]}{row+1}!")
+
+
 
 
 # Initialize the game
